@@ -8,6 +8,7 @@ import org.jellyfin.sdk.discovery.DiscoveryService
 import org.jellyfin.sdk.model.ClientInfo
 import org.jellyfin.sdk.model.DeviceInfo
 import org.jellyfin.sdk.model.ServerVersion
+import java.security.cert.Certificate
 
 public class Jellyfin(
 	public val options: JellyfinOptions,
@@ -45,6 +46,8 @@ public class Jellyfin(
 		clientInfo: ClientInfo? = options.clientInfo,
 		deviceInfo: DeviceInfo? = options.deviceInfo,
 		httpClientOptions: HttpClientOptions = HttpClientOptions(),
+		caCertificate: Certificate? = null,
+		allowSystemCas: Boolean = true,
 	): ApiClient {
 		checkNotNull(clientInfo) {
 			"ClientInfo needs to be set when calling createApi() or by providing it when constructing the Jellyfin instance"
@@ -60,6 +63,8 @@ public class Jellyfin(
 			deviceInfo = deviceInfo,
 			httpClientOptions = httpClientOptions,
 			socketConnectionFactory = options.socketConnectionFactory,
+			caCertificate = caCertificate,
+			allowSystemCas = allowSystemCas,
 		)
 	}
 

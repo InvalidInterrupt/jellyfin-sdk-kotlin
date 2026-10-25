@@ -6,6 +6,7 @@ import org.jellyfin.sdk.api.operations.Api
 import org.jellyfin.sdk.api.sockets.SocketApi
 import org.jellyfin.sdk.model.ClientInfo
 import org.jellyfin.sdk.model.DeviceInfo
+import java.security.cert.Certificate
 import kotlin.reflect.KClass
 
 public abstract class ApiClient {
@@ -49,6 +50,16 @@ public abstract class ApiClient {
 	public abstract val httpClientOptions: HttpClientOptions
 
 	/**
+	 * CA certificate to trust (in addition to any system CAs).
+	 */
+	public abstract val caCertificate: Certificate?
+
+	/**
+	 * Trust system CAs if set to true.
+	 */
+	public abstract val allowSystemCas: Boolean
+
+	/**
 	 * Change the authorization values used in this ApiClient instance.
 	 */
 	public abstract fun update(
@@ -56,6 +67,8 @@ public abstract class ApiClient {
 		accessToken: String? = this.accessToken,
 		clientInfo: ClientInfo = this.clientInfo,
 		deviceInfo: DeviceInfo = this.deviceInfo,
+		caCertificate: Certificate? = this.caCertificate,
+		allowSystemCas: Boolean = this.allowSystemCas,
 	)
 
 	/**

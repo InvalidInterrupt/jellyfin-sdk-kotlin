@@ -3,6 +3,7 @@ package org.jellyfin.sdk.discovery
 import kotlinx.coroutines.flow.Flow
 import org.jellyfin.sdk.Jellyfin
 import org.jellyfin.sdk.model.api.ServerDiscoveryInfo
+import java.security.cert.Certificate
 
 /**
  * Service for discovery related functionality.
@@ -45,9 +46,13 @@ public class DiscoveryService(
 	public suspend fun getRecommendedServers(
 		servers: Collection<String>,
 		minimumScore: RecommendedServerInfoScore = RecommendedServerInfoScore.BAD,
+		caCertificate: Certificate? = null,
+		allowSystemCas: Boolean = true,
 	): Collection<RecommendedServerInfo> = recommendedServerDiscovery.discover(
 		servers = servers,
-		minimumScore = minimumScore
+		minimumScore = minimumScore,
+		caCertificate = caCertificate,
+		allowSystemCas = allowSystemCas,
 	)
 
 	/**

@@ -31,16 +31,19 @@ import java.io.IOException
 import java.io.InterruptedIOException
 import java.net.ConnectException
 import java.net.UnknownHostException
+import java.security.cert.Certificate
 import javax.net.ssl.SSLException
 import kotlin.coroutines.resumeWithException
 
 @Suppress("LongParameterList")
 public class OkHttpClient(
-	private val client: okhttp3.OkHttpClient,
+	private var client: okhttp3.OkHttpClient,
 	initialBaseUrl: String?,
 	initialAccessToken: String?,
 	initialClientInfo: ClientInfo,
 	initialDeviceInfo: DeviceInfo,
+	initialCaCertificate: Certificate? = null,
+	initialAllowSystemCas: Boolean = true,
 	override val httpClientOptions: HttpClientOptions,
 	private val socketConnectionFactory: SocketConnectionFactory,
 ) : ApiClient() {
@@ -52,6 +55,10 @@ public class OkHttpClient(
 		private set
 	public override var deviceInfo: DeviceInfo = initialDeviceInfo
 		private set
+	public override var caCertificate: Certificate? = initialCaCertificate
+		private set
+	public override var allowSystemCas: Boolean = initialAllowSystemCas
+		private set
 
 	private val _webSocket = lazy {
 		DefaultSocketApi(this, httpClientOptions.socketReconnectPolicy, socketConnectionFactory)
@@ -59,11 +66,23 @@ public class OkHttpClient(
 
 	override val webSocket: SocketApi by _webSocket
 
-	override fun update(baseUrl: String?, accessToken: String?, clientInfo: ClientInfo, deviceInfo: DeviceInfo) {
+	override fun update(
+		baseUrl: String?,
+		accessToken: String?,
+		clientInfo: ClientInfo,
+		deviceInfo: DeviceInfo,
+		caCertificate: Certificate?,
+		allowSystemCas: Boolean,
+	) {
 		this.baseUrl = baseUrl
 		this.accessToken = accessToken
 		this.clientInfo = clientInfo
 		this.deviceInfo = deviceInfo
+		this.caCertificate = caCertificate
+		this.allowSystemCas = allowSystemCas
+
+		val (sslSocketFactory, trustManager) = OkHttpFactory.getSSLSocketFactoryArgs(this.caCertificate, this.allowSystemCas)
+		this.client = this.client.newBuilder().sslSocketFactory(sslSocketFactory, trustManager).build()
 
 		// Notify websocket only if initialized
 		if (_webSocket.isInitialized()) {
@@ -87,6 +106,7 @@ public class OkHttpClient(
 			val safeUrl = accessToken?.let { url.replace(it, "******") } ?: url
 			"$method $safeUrl"
 		}
+		logger.debug {"Trusting provided cert ${this.caCertificate}"}
 
 		val request = Request.Builder().apply {
 			val body = when (method) {

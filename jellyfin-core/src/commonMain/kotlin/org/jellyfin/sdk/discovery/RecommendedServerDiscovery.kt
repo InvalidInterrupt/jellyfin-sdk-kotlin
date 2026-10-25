@@ -19,6 +19,7 @@ import org.jellyfin.sdk.api.client.extensions.systemApi
 import org.jellyfin.sdk.model.ServerVersion
 import org.jellyfin.sdk.model.api.PublicSystemInfo
 import org.jellyfin.sdk.util.currentTimeMillis
+import java.security.cert.Certificate
 import kotlin.time.Duration.Companion.seconds
 
 private val logger = KotlinLogging.logger {}
@@ -113,7 +114,9 @@ public class RecommendedServerDiscovery constructor(
 		)
 	}
 
-	private suspend fun getSystemInfoResult(address: String): SystemInfoResult {
+	private suspend fun getSystemInfoResult(
+		address: String, caCertificate: Certificate? = null, allowSystemCas: Boolean = true
+	): SystemInfoResult {
 		logger.info { "Requesting public system info for $address" }
 
 		val client = jellyfin.createApi(
@@ -124,6 +127,8 @@ public class RecommendedServerDiscovery constructor(
 				requestTimeout = HTTP_TIMEOUT,
 				socketTimeout = HTTP_TIMEOUT,
 			),
+			caCertificate = caCertificate,
+			allowSystemCas = allowSystemCas,
 		)
 
 		val responseTimeStart = currentTimeMillis()
@@ -161,6 +166,8 @@ public class RecommendedServerDiscovery constructor(
 	public suspend fun discover(
 		servers: Collection<String>,
 		minimumScore: RecommendedServerInfoScore,
+		caCertificate: Certificate? = null,
+		allowSystemCas: Boolean = true,
 	): Collection<RecommendedServerInfo> = withContext(Dispatchers.IO) {
 		val semaphore = Semaphore(MAX_SIMULTANEOUS_RETRIEVALS)
 
@@ -168,7 +175,7 @@ public class RecommendedServerDiscovery constructor(
 			.map { address ->
 				async {
 					semaphore.withPermit {
-						getSystemInfoResult(address).let(::assignScore)
+						getSystemInfoResult(address, caCertificate, allowSystemCas).let(::assignScore)
 					}
 				}
 			}
